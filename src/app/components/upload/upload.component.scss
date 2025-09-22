@@ -1,0 +1,126 @@
+.upload-wrapper {
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+  background-color: #f8fafc;
+}
+
+.upload-card {
+  max-width: 400px;
+  width: 100%;
+  padding: 20px;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.upload-card h2 {
+  font-size: 24px;
+  color: #1f2937;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.file-input {
+  display: none;
+}
+
+.file-label {
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+  background-color: #505a66;
+  color: #ffffff;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-bottom: 20px;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-label mat-icon {
+  margin-right: 8px;
+}
+
+.status {
+  margin-bottom: 20px;
+  text-align: center;
+  font-size: 14px;
+}
+
+.status .uploading {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  color: #505a66;
+}
+
+.status .success {
+  color: #2f855a;
+}
+
+.status .error {
+  color: #dc2626;
+}
+
+.full-width {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.options {
+  margin-bottom: 20px;
+}
+
+.options h3 {
+  font-size: 18px;
+  color: #1f2937;
+  margin: 0 0 10px 0;
+}
+
+.checkbox-group {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 20px;
+}
+
+.checkbox-group mat-checkbox {
+  flex: 1 0 auto;
+}
+
+.checkbox-label {
+  font-size: 14px;
+  color: #1f2937;
+}
+
+.actions {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.actions button {
+  padding: 10px 30px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.actions button:first-child {
+  background-color: #505a66;
+  color: #ffffff;
+  border: none;
+}
+
+.actions button:first-child:disabled {
+  background-color: #d1d5db;
+  color: #6b7280;
+}
+
+.actions button:last-child {
+  background-color: #ffffff;
+  color: #dc2626;
+  border: 1px solid #dc2626;
+}

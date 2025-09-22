@@ -1,0 +1,71 @@
+<section class="upload-wrapper">
+  <mat-card class="upload-card">
+    <h2>Select a File</h2>
+
+    <div class="status">
+      <ng-container [ngSwitch]="state()?.status">
+        <div *ngSwitchCase="'idle'" class="uploading">Ready to upload</div>
+        <div *ngSwitchCase="'initiated'" class="uploading">
+          Uploading: {{ progress() }}%
+          <mat-progress-bar mode="determinate" [value]="progress()"></mat-progress-bar>
+        </div>
+        <div *ngSwitchCase="'processing'" class="uploading">Upload completed</div>
+        <div *ngSwitchCase="'completed'" class="success">Upload completed</div>
+        <div *ngSwitchCase="'failed'" class="error">Upload failed</div>
+        <div *ngSwitchCase="'cancelled'" class="error">Upload cancelled</div>
+        <div *ngSwitchDefault>Ready to upload</div>
+      </ng-container>
+    </div>
+
+    <input type="file" (change)="onFileSelected($event)" class="file-input" id="fileInput" />
+    <label for="fileInput" class="file-label">
+      <mat-icon>cloud_upload</mat-icon> {{ (selectedFile() && selectedFile()!.name) || 'File is not chosen' }}
+    </label>
+
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Video title</mat-label>
+      <input matInput placeholder="Enter a new title" [value]="videoTitle" (input)="onTitleChange($event)">
+    </mat-form-field>
+
+    <div class="options">
+      <h3>Choose formats</h3>
+      <div class="checkbox-group">
+        @for (format of availableFormats; track $index) {
+          <mat-checkbox [value]="format" (change)="onFormatChange($event)" [checked]="transformRequestValue.targetFormats.includes(format)">
+            {{ format }}
+          </mat-checkbox>
+        }
+      </div>
+
+      <h3>Choose resolutions</h3>
+      <div class="checkbox-group">
+        @for (res of availableResolutions; track $index) {
+          <mat-checkbox [value]="res" (change)="onResolutionChange($event)" [checked]="transformRequestValue.targetResolutions.includes(res)">
+            {{ res }}
+          </mat-checkbox>
+        }
+      </div>
+
+      <h3>Choose codecs</h3>
+      <div class="checkbox-group">
+        @for (codec of availableCodecs; track $index) {
+          <mat-checkbox [value]="codec" (change)="onCodecChange($event)" [checked]="transformRequestValue.targetCodecs.includes(codec)">
+            {{ codec }}
+          </mat-checkbox>
+        }
+      </div>
+
+      <h3>Audio</h3>
+      <div class="checkbox-group">
+        <mat-checkbox (change)="onMutedChange($event)" [checked]="transformRequestValue.muted">
+          <span class="checkbox-label">Muted</span>
+        </mat-checkbox>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button mat-flat-button color="primary" [disabled]="isUploading() || !selectedFile()" (click)="upload()">Upload</button>
+      <button mat-stroked-button color="warn" *ngIf="isUploading()" (click)="cancel()">Cancel</button>
+    </div>
+  </mat-card>
+</section>
