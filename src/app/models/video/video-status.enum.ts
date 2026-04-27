@@ -1,8 +1,8 @@
-export enum UploadStatus {
+export enum VideoStatus {
   IDLE = 'idle',
-  INITIATED = 'initiated',
+  UPLOADING = 'uploading',
   PROCESSING = 'processing',
   COMPLETED = 'completed',
   FAILED = 'failed',
-  CANCELLED = 'cancelled'
+  ABORTED = 'aborted'
 }

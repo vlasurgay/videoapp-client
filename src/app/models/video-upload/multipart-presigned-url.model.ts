@@ -1,4 +1,4 @@
-export interface S3PresignedUrl {
+export interface MultipartPresignedUrl {
     partNumber: number,
     url: string,
     headers: Map<string, string>

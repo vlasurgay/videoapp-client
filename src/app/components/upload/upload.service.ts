@@ -1,14 +1,14 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { ReplaySubject, takeUntil, from, Observable, map, concatMap, catchError, tap, throwError, toArray, finalize } from 'rxjs';
+import { ReplaySubject, takeUntil, from, Observable, map, concatMap, catchError, tap, throwError, toArray } from 'rxjs';
 import { VideoApiService } from '../../services/video-api.service';
-import { Metadata } from '../../models/video/metadata.model';
-import { UploadInfo } from '../../models/video/upload-info.model';
 import { UploadStateService } from '../../states/upload/upload-state.service';
-import { TransformRequest } from '../../models/video/transform-request.model';
 import { FileUtils } from '../../utils/file.utils';
-import { S3CompletedBatch } from '../../models/s3/s3-completed-batch.model';
-import { S3PresignedBatch } from '../../models/s3/s3-presigned-batch.model';
-import { UploadStatus } from '../../models/video/upload-status.enum';
+import { CompletedMultipartContext } from '../../models/video-upload/completed-multipart-context.model';
+import { MultipartUploadContext } from '../../models/video-upload/multipart-upload-context.model';
+import { VideoStatus } from '../../models/video/video-status.enum';
+import { InitUploadRequest } from '../../models/video-upload/init-upload-request.model';
+import { TargetSettings } from '../../models/video-upload/target-settings.model';
+import { VideoConfig } from '../../models/video-upload/video-config.model';
 
 
 
@@ -17,26 +17,30 @@ export class UploadService implements OnDestroy {
 
     private readonly destroy = new ReplaySubject<void>(1);
 
-    constructor(private videoApiService: VideoApiService, private uploadStateService: UploadStateService) {}    
+    constructor(private videoApiService: VideoApiService, private uploadStateService: UploadStateService) {}
 
-    uploadMultipartFile(file: File, title: string, transformRequest: TransformRequest): Observable<void> {
+    getVideoConfig(): Observable<VideoConfig> {
+        return this.videoApiService.getVideoConfig();
+    }
 
-        return this.extractVideoMetadata(file).pipe(
-            tap(() => this.uploadStateService.updateState( { status: UploadStatus.INITIATED })),
-            map(metadata => this.fillUploadInfo(file, title, metadata, transformRequest)),
-            concatMap(uploadInfo => this.videoApiService.initiateMultipartUpload(uploadInfo)),
-            tap(s3PresignedBatch => this.uploadStateService.updateState(
-                { uploadId: s3PresignedBatch.uploadId, key: s3PresignedBatch.key, totalParts: s3PresignedBatch.presignedUrls.length }
+    uploadMultipartFile(file: File, title: string, description: string, targetSettings: TargetSettings): Observable<void> {
+
+        this.uploadStateService.updateState( { status: VideoStatus.UPLOADING });
+        const uploadRequest = this.fillInitUploadRequest(file, title, description, targetSettings);
+
+        return this.videoApiService.initiateMultipartUpload(uploadRequest).pipe(
+            tap(uploadContext => this.uploadStateService.updateState(
+                { uploadId: uploadContext.uploadId, key: uploadContext.key, totalParts: uploadContext.presignedUrls.length }
             )),
-            concatMap(s3PresignedBatch => this.uploadParts(file, s3PresignedBatch)),
-            concatMap(s3CompletedBatch => this.videoApiService.completeMultipartUpload(s3CompletedBatch)),
+            concatMap(uploadContext => this.uploadParts(file, uploadContext)),
+            concatMap(completedContext => this.videoApiService.completeMultipartUpload(completedContext)),
             catchError(error => this.handleError(error)),
             takeUntil(this.destroy)
         );
     }
 
 
-    cancelUpload(status: UploadStatus): Observable<void> {
+    cancelUpload(status: VideoStatus): Observable<void> {
         this.destroy.next();
         const state = this.uploadStateService.getState();
         if (state.key && state.uploadId) {
@@ -46,73 +50,33 @@ export class UploadService implements OnDestroy {
     }
     
 
-    private extractVideoMetadata(file: File): Observable<Metadata> {
-        
-        const video = document.createElement('video');
-        video.preload = 'metadata';
-        video.muted = true;
-        const fileURL = URL.createObjectURL(file);
-        video.src = fileURL;
-
-        return new Observable<Metadata>(observer => {
-            
-            video.onloadedmetadata = () => {
-                observer.next({
-                    type: 'original',
-                    format: file.type,
-                    duration: video.duration,
-                    height: video.videoHeight,
-                    width: video.videoWidth,
-                    bitrate: (file.size * 8) / video.duration,
-                    fileSizeBytes: file.size,
-                    hasAudio: this.hasAudioTrack(video)
-                });
-                observer.complete();
-            };
-
-            video.onerror = () => {
-                observer.error(new Error('Error while metadata loading'));            
-            };
-        }).pipe(
-            catchError(error => throwError(() => new Error(`Metadata extraction failed: ${error.message}`))),
-            finalize(() => URL.revokeObjectURL(fileURL))
-        );
-    }
-    
-
-    private hasAudioTrack(video: HTMLVideoElement): boolean {
-        const audioTracks = (video as any).audioTracks;
-        return audioTracks ? audioTracks.length > 0 : true; 
-    }
-
-
-    private fillUploadInfo(file: File, title: string, metadata: Metadata, transformRequest: TransformRequest): UploadInfo {
+    private fillInitUploadRequest(file: File, title: string, description: string, targetSettings: TargetSettings): InitUploadRequest {
         return {
             fileName: file.name,
             title: title,
-            totalParts: FileUtils.resolveTotalParts(file),
-            originalMetadata: metadata,
-            transformRequest
+            description: '',
+            fileSizeBytes: file.size,
+            targetSettings: targetSettings
         };
     }
 
 
-    private uploadParts(file: File, s3PresignedBatch: S3PresignedBatch): Observable<S3CompletedBatch> {
+    private uploadParts(file: File, uploadContext: MultipartUploadContext): Observable<CompletedMultipartContext> {
 
-        return from(s3PresignedBatch.presignedUrls).pipe(
+        return from(uploadContext.presignedUrls).pipe(
             concatMap(presignedUrl => {
 
-                if (s3PresignedBatch.expiresAt - Date.now() <= 0) {
+                if (uploadContext.expiresAt - Date.now() <= 0) {
                     return throwError(() => new Error('Presigned URL expired'));
                 }
-                const filePart = FileUtils.getFilePart(file, presignedUrl.partNumber);
+                const filePart = FileUtils.getFilePart(file, presignedUrl.partNumber, uploadContext.maxPartUploadSize);
 
                 return this.videoApiService.uploadPart(presignedUrl.url, filePart, presignedUrl.partNumber, presignedUrl.headers).pipe(
                     tap(() => this.uploadStateService.incrementProgress())
                 );
             }),
             toArray(),
-            map(eTags => ({ key: s3PresignedBatch.key, uploadId: s3PresignedBatch.uploadId, eTags })
+            map(uploadedParts => ({ key: uploadContext.key, uploadId: uploadContext.uploadId, uploadedParts })
             )
         );
     }
@@ -120,7 +84,7 @@ export class UploadService implements OnDestroy {
 
     private handleError(error: any): Observable<never> {
         this.destroy.next();
-        return this.cancelUpload(UploadStatus.FAILED).pipe(
+        return this.cancelUpload(VideoStatus.FAILED).pipe(
             concatMap(() => throwError(() => error))
         );
     }

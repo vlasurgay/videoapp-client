@@ -1,4 +1,4 @@
-export interface S3PartETag {
+export interface UploadedPart {
     partNumber: number,
     eTag: string
 }

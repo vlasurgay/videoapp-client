@@ -2,7 +2,7 @@ import { ComponentStore } from '@ngrx/component-store';
 import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { UploadState } from './upload-state.model';
-import { UploadStatus } from '../../models/video/upload-status.enum';
+import { VideoStatus } from '../../models/video/video-status.enum';
 
 
 @Injectable({ providedIn: 'root' })
@@ -12,7 +12,7 @@ export class UploadStateService extends ComponentStore<UploadState> {
         super({ 
             key: '',
             uploadId: '', 
-            status: UploadStatus.IDLE,
+            status: VideoStatus.IDLE,
             totalParts: 0,
             progress: 0, 
 
@@ -29,7 +29,7 @@ export class UploadStateService extends ComponentStore<UploadState> {
         this.patchState({ 
             key: '',
             uploadId: '', 
-            status: UploadStatus.IDLE,
+            status: VideoStatus.IDLE,
             totalParts: 0,
             progress: 0,
         }); 

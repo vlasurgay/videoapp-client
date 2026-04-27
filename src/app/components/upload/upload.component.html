@@ -3,9 +3,9 @@
     <h2>Select a File</h2>
 
     <div class="status">
-      <ng-container [ngSwitch]="state()?.status">
+      <ng-container [ngSwitch]="state().status">
         <div *ngSwitchCase="'idle'" class="uploading">Ready to upload</div>
-        <div *ngSwitchCase="'initiated'" class="uploading">
+        <div *ngSwitchCase="'uploading'" class="uploading">
           Uploading: {{ progress() }}%
           <mat-progress-bar mode="determinate" [value]="progress()"></mat-progress-bar>
         </div>
@@ -28,37 +28,27 @@
     </mat-form-field>
 
     <div class="options">
-      <h3>Choose formats</h3>
-      <div class="checkbox-group">
-        @for (format of availableFormats; track $index) {
-          <mat-checkbox [value]="format" (change)="onFormatChange($event)" [checked]="transformRequestValue.targetFormats.includes(format)">
-            {{ format }}
-          </mat-checkbox>
-        }
-      </div>
 
       <h3>Choose resolutions</h3>
       <div class="checkbox-group">
-        @for (res of availableResolutions; track $index) {
-          <mat-checkbox [value]="res" (change)="onResolutionChange($event)" [checked]="transformRequestValue.targetResolutions.includes(res)">
-            {{ res }}
-          </mat-checkbox>
-        }
-      </div>
-
-      <h3>Choose codecs</h3>
-      <div class="checkbox-group">
-        @for (codec of availableCodecs; track $index) {
-          <mat-checkbox [value]="codec" (change)="onCodecChange($event)" [checked]="transformRequestValue.targetCodecs.includes(codec)">
-            {{ codec }}
+        @for (res of config().availableResolutions; track res) {
+          <mat-checkbox [value]="res" (change)="onResolutionChange($event)" [checked]="targetSettingsValue.targetResolutions.includes(res)">
+            {{ res }}p
           </mat-checkbox>
         }
       </div>
 
       <h3>Audio</h3>
       <div class="checkbox-group">
-        <mat-checkbox (change)="onMutedChange($event)" [checked]="transformRequestValue.muted">
+        <mat-checkbox (change)="onMutedChange($event)" [checked]="targetSettingsValue.muted">
           <span class="checkbox-label">Muted</span>
+        </mat-checkbox>
+      </div>
+
+      <h3>Subs</h3>
+      <div class="checkbox-group">
+        <mat-checkbox (change)="onAiSubsChange($event)" [checked]="targetSettingsValue.aiSubs">
+          <span class="checkbox-label">Subs</span>
         </mat-checkbox>
       </div>
     </div>
