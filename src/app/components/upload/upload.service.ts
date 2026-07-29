@@ -1,6 +1,6 @@
 import { Injectable, OnDestroy } from '@angular/core';
 import { ReplaySubject, takeUntil, from, Observable, map, concatMap, catchError, tap, throwError, toArray } from 'rxjs';
-import { VideoApiService } from '../../services/video-api.service';
+import { VideoUploadApiService } from '../../services/video-upload-api.service';
 import { UploadStateService } from '../../states/upload/upload-state.service';
 import { FileUtils } from '../../utils/file.utils';
 import { CompletedMultipartContext } from '../../models/video-upload/completed-multipart-context.model';
@@ -17,10 +17,10 @@ export class UploadService implements OnDestroy {
 
     private readonly destroy = new ReplaySubject<void>(1);
 
-    constructor(private videoApiService: VideoApiService, private uploadStateService: UploadStateService) {}
+    constructor(private videoUploadApiService: VideoUploadApiService, private uploadStateService: UploadStateService) {}
 
     getVideoConfig(): Observable<VideoConfig> {
-        return this.videoApiService.getVideoConfig();
+        return this.videoUploadApiService.getVideoConfig();
     }
 
     uploadMultipartFile(file: File, title: string, description: string, targetSettings: TargetSettings): Observable<void> {
@@ -28,12 +28,12 @@ export class UploadService implements OnDestroy {
         this.uploadStateService.updateState( { status: VideoStatus.UPLOADING });
         const uploadRequest = this.fillInitUploadRequest(file, title, description, targetSettings);
 
-        return this.videoApiService.initiateMultipartUpload(uploadRequest).pipe(
+        return this.videoUploadApiService.initiateMultipartUpload(uploadRequest).pipe(
             tap(uploadContext => this.uploadStateService.updateState(
                 { uploadId: uploadContext.uploadId, key: uploadContext.key, totalParts: uploadContext.presignedUrls.length }
             )),
             concatMap(uploadContext => this.uploadParts(file, uploadContext)),
-            concatMap(completedContext => this.videoApiService.completeMultipartUpload(completedContext)),
+            concatMap(completedContext => this.videoUploadApiService.completeMultipartUpload(completedContext)),
             catchError(error => this.handleError(error)),
             takeUntil(this.destroy)
         );
@@ -44,7 +44,7 @@ export class UploadService implements OnDestroy {
         this.destroy.next();
         const state = this.uploadStateService.getState();
         if (state.key && state.uploadId) {
-            return this.videoApiService.abortMultipartUpload(state.key, state.uploadId, status);
+            return this.videoUploadApiService.abortMultipartUpload(state.key, state.uploadId, status);
         }
         return from([]);
     }
@@ -71,7 +71,7 @@ export class UploadService implements OnDestroy {
                 }
                 const filePart = FileUtils.getFilePart(file, presignedUrl.partNumber, uploadContext.maxPartUploadSize);
 
-                return this.videoApiService.uploadPart(presignedUrl.url, filePart, presignedUrl.partNumber, presignedUrl.headers).pipe(
+                return this.videoUploadApiService.uploadPart(presignedUrl.url, filePart, presignedUrl.partNumber, presignedUrl.headers).pipe(
                     tap(() => this.uploadStateService.incrementProgress())
                 );
             }),

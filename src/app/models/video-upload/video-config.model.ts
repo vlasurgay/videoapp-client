@@ -1,3 +1,4 @@
 export interface VideoConfig {
-  availableResolutions: string[]
+  availableResolutions: string[],
+  availableLanguages: string[]
 }

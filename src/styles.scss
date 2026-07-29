@@ -1,37 +1,68 @@
+@import "plyr/dist/plyr.css";
 @import '@angular/material/prebuilt-themes/indigo-pink.css';
+
+:root {
+  --bg-color: #f8fafc;
+  --surface-color: #ffffff;
+  --primary-color: #505a66;
+  --primary-text: #ffffff;
+  
+  --text-main: #1f2937;
+  --text-muted: #555555;
+  --border-color: #e5e7eb;
+  
+  --success-color: #2f855a;
+  --error-color: #dc2626;
+
+  --radius-md: 8px;
+  --radius-sm: 4px;
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  
+  --container-max: 1000px;
+}
 
 body {
   margin: 0;
-  font-family: 'Roboto', sans-serif;
-  background-color: #f8fafc;
-  color: #1f2937;
+  background-color: var(--bg-color);
+  color: var(--text-main);
 }
 
 html, body {
   height: 100%;
 }
 
-.main-header {
-  background-color: #505a66;
-  color: #ffffff;
-  padding: 20px;
-  text-align: center;
+.container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  padding: 0 15px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.main-header h1 {
-  margin: 0;
-  font-size: 28px;
+.card {
+  background-color: var(--surface-color);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
-.main-content {
-  padding: 20px;
-  min-height: calc(100vh - 160px);
+.badge {
+  background: var(--primary-color);
+  color: var(--primary-text);
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  text-transform: uppercase;
+  font-weight: 500;
 }
 
-.main-footer {
-  background-color: #505a66;
-  color: #ffffff;
-  text-align: center;
-  padding: 20px;
-  font-size: 14px;
+.divider {
+  border: 0;
+  border-top: 1px solid var(--border-color);
+  margin: 15px 0;
 }
+
+.text-center { text-align: center; }
+.w-100 { width: 100%; }
+.mb-2 { margin-bottom: 20px; }

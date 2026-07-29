@@ -1,19 +1,22 @@
-.main-header {
-  background-color: #505a66;
-  color: white;
-  padding: 1rem;
+.app-wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-header, .main-footer {
+  background-color: var(--primary-color);
+  color: var(--primary-text);
   text-align: center;
+  padding: 20px;
+}
+
+.main-header h1 {
+  margin: 0;
+  font-size: 28px;
 }
 
 .main-content {
-  padding: 2rem;
-  min-height: calc(100vh - 160px);
-}
-
-.main-footer {
-  background-color: #505a66;
-  color: white;
-  text-align: center;
-  padding: 1rem;
-  font-size: 0.9rem;
+  flex: 1;
+  padding: 30px 0;
 }

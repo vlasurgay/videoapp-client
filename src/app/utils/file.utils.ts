@@ -1,5 +1,3 @@
-
-
 export class FileUtils {
 
     public static getFilePart(file: File, partNumber: number, maxPartUploadSize: number): Blob {
@@ -10,9 +8,4 @@ export class FileUtils {
         return file.slice(start, end);
     }
 
-
-    static createRandomUUID(): string {
-        return crypto.randomUUID();
-    }
-    
 }

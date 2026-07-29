@@ -15,7 +15,7 @@ import { UploadState } from '../../states/upload/upload-state.model';
 import { ChangeDetectionStrategy } from '@angular/core';
 import { TargetSettings } from '../../models/video-upload/target-settings.model';
 import { VideoStatus } from '../../models/video/video-status.enum';
-import { VideoMetadata } from '../../models/video/video-metadata.model';
+import { VideoMetadata } from '../../models/video-upload/video-metadata.model';
 import { VideoConfig } from '../../models/video-upload/video-config.model';
 
 
@@ -43,6 +43,7 @@ export class UploadComponent implements OnDestroy {
 
   private targetSettings = signal<TargetSettings>({
     targetResolutions: [],
+    targetLanguages: [],
     muted: false,
     aiSubs: false
   });
@@ -53,9 +54,17 @@ export class UploadComponent implements OnDestroy {
   videoDescription: string = ''; 
 
   private config$ = this.uploadService.getVideoConfig();
-  readonly config = toSignal(this.config$, { initialValue: { availableResolutions: [] } as VideoConfig });
+  readonly config = toSignal(this.config$, { initialValue: { availableResolutions: [], availableLanguages:[] } as VideoConfig });
   readonly state = toSignal<UploadState>(this.uploadStateService.state$, { requireSync: true });
+  private readonly languageDisplayNames = new Intl.DisplayNames(navigator.language, { type: 'language' });
 
+
+  readonly languageOptions = computed(() => {
+  return this.config().availableLanguages.map(code => ({
+    code,
+    label: this.toLanguageDisplayName(code),
+  }));
+});
 
   readonly progress = computed(() => {
     const state = this.state();
@@ -164,6 +173,22 @@ export class UploadComponent implements OnDestroy {
     );
   }
 
+  private toLanguageDisplayName(code: string): string {
+  try {
+    const displayLang = this.languageDisplayNames.of(this.toIntlLocale(code));
+
+    if (displayLang != null) {
+      return displayLang;
+    }
+  } catch {}
+  
+  return code;
+}
+
+private toIntlLocale(code: string): string {
+  return code === 'zh-cn' ? 'zh-CN' : code;
+}
+
   private hasAudioTrack(video: HTMLVideoElement): boolean {
     const audioTracks = (video as any).audioTracks;
     return audioTracks ? audioTracks.length > 0 : true; 
@@ -196,6 +221,23 @@ export class UploadComponent implements OnDestroy {
     });
   }
 
+  onLanguageChange(event: MatCheckboxChange) {
+    const value = event.source.value;
+    this.targetSettings.update(current => {
+      if (event.checked) {
+        return {
+          ...current,
+          targetLanguages: [...current.targetLanguages, value]
+        };
+      } else {
+        return {
+          ...current,
+          targetLanguages: current.targetLanguages.filter(v => v !== value)
+        };
+      }
+    });
+  }
+
   onMutedChange(event: MatCheckboxChange) {
     this.targetSettings.update(current => ({
       ...current,
@@ -216,6 +258,7 @@ export class UploadComponent implements OnDestroy {
     this.videoDescription = '';
     this.targetSettings.set({
       targetResolutions: [],
+      targetLanguages: [],
       muted: false,
       aiSubs: false
     });

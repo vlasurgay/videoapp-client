@@ -1,0 +1,28 @@
+<div *ngIf="videoData">
+  <div class="player-wrapper mb-2">
+    <video #videoPlayer playsinline crossorigin="anonymous"></video>
+  </div>
+
+  <div class="video-info">
+    <div class="video-header-row">
+      <h1 class="video-title">{{ videoData.title }}</h1>
+      
+      <div class="audio-selector" *ngIf="(audioTracks$ | async) as tracks">
+        <div *ngIf="tracks.length > 1" class="custom-select-wrapper">
+          <span class="audio-icon">Language:</span>
+          <select 
+            class="styled-select" 
+            [value]="currentAudioTrack$ | async" 
+            (change)="onAudioChange($event)">
+            <option *ngFor="let track of tracks" [value]="track.id">
+              {{ track.name || track.lang || 'Track ' + (track.id + 1) }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <p class="video-description">{{ videoData.description }}</p>
+  </div>
+</div>
