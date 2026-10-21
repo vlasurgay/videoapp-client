@@ -1,0 +1,36 @@
+name: videoapp-client
+
+on:
+  push:
+    branches:
+      - master
+      - cicd-terraform-aws-prep
+  pull_request:
+    branches:
+      - master
+      - cicd-terraform-aws-prep
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v7
+
+      - name: set up node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: install dependencies
+        run: npm ci
+
+      - name: build
+        run: npm run build
