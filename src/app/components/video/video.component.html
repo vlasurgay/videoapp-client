@@ -1,5 +1,16 @@
-<div *ngIf="videoData">
+@if (loadError(); as error) {
+  <p class="load-error">{{ error }}</p>
+}
+
+@if (video(); as videoData) {
   <div class="player-wrapper mb-2">
+    
+    @if (playbackError(); as message) {
+      <div class="player-error">
+      {{ message }}
+      </div>
+    }
+    
     <video #videoPlayer playsinline crossorigin="anonymous"></video>
   </div>
 
@@ -7,22 +18,28 @@
     <div class="video-header-row">
       <h1 class="video-title">{{ videoData.title }}</h1>
       
-      <div class="audio-selector" *ngIf="(audioTracks$ | async) as tracks">
-        <div *ngIf="tracks.length > 1" class="custom-select-wrapper">
-          <span class="audio-icon">Language:</span>
-          <select 
-            class="styled-select" 
-            [value]="currentAudioTrack$ | async" 
-            (change)="onAudioChange($event)">
-            <option *ngFor="let track of tracks" [value]="track.id">
+      @if (audioTracks(); as tracks) {
+        <div class="audio-selector">
+
+          @if (tracks.length > 1) {
+            <div class="custom-select-wrapper">
+
+            <span class="audio-icon">Language:</span>
+            <select class="styled-select" (change)="onAudioChange($event)">
+
+              @for (track of tracks; track track.id) {
+                <option [value]="track.id" [selected]="track.id === currentAudioTrack()">
               {{ track.name || track.lang || 'Track ' + (track.id + 1) }}
-            </option>
-          </select>
+                </option>
+              }
+            </select>
+          </div>
+          }
         </div>
-      </div>
+      }
     </div>
 
     <hr class="divider">
     <p class="video-description">{{ videoData.description }}</p>
   </div>
-</div>
+}

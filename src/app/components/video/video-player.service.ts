@@ -1,5 +1,4 @@
-import { Injectable, OnDestroy } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import { Injectable, OnDestroy, signal } from '@angular/core';
 import Hls from 'hls.js';
 
 @Injectable()
@@ -7,15 +6,40 @@ export class VideoPlayerService implements OnDestroy {
   private hls?: Hls;
   private plyr: any;
 
-  // Потоки для передачі даних в компонент
-  public audioTracks$ = new BehaviorSubject<any[]>([]);
-  public currentAudioTrack$ = new BehaviorSubject<number>(-1);
+  readonly audioTracks = signal<any[]>([]);
+readonly currentAudioTrack = signal(-1);
+readonly error = signal<string | null>(null);
 
   public async initPlayer(videoElement: HTMLVideoElement, src: string): Promise<void> {
     this.destroyPlayer();
+    console.info('[player] master playlist URL:', src);
 
     if (Hls.isSupported()) {
-      this.hls = new Hls({ enableWorker: true });
+      const hls = new Hls({ enableWorker: true });
+      this.hls = hls;
+      
+      this.hls.on(Hls.Events.ERROR, (_, data: any) => {
+        console.error('[hls] error', {
+          type: data.type,
+          details: data.details,
+          fatal: data.fatal,
+          httpStatus: data.response?.code,
+          url: data.url ?? data.frag?.url ?? data.context?.url
+        });
+
+        if (!data.fatal) return;
+
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          this.hls?.recoverMediaError();
+          return;
+        }
+
+        const status = data.response?.code ? `, HTTP ${data.response.code}` : '';
+        this.error.set(`Could not load the video (${data.details}${status}). See the browser console for details.`);
+        this.hls?.destroy();
+        this.hls = undefined;
+      });
+
       this.hls.loadSource(src);
       this.hls.attachMedia(videoElement);
 
@@ -39,20 +63,23 @@ export class VideoPlayerService implements OnDestroy {
           i18n: { quality: 'Quality', speed: 'Speed', normal: 'Normal', qualityLabel: { 0: 'Auto' } }
         });
 
-        // Витягуємо аудіодоріжки після парсингу
         if (this.hls!.audioTracks && this.hls!.audioTracks.length > 1) {
-          this.audioTracks$.next(this.hls!.audioTracks);
-          this.currentAudioTrack$.next(this.hls!.audioTrack);
+          this.audioTracks.set(this.hls!.audioTracks);
+          this.currentAudioTrack.set(this.hls!.audioTrack);
         }
 
         videoElement.play().catch(() => {});
       });
 
-      // Слухаємо перемикання доріжок (якщо воно відбудеться десь ще)
       this.hls.on(Hls.Events.AUDIO_TRACK_SWITCHED, (_, data) => {
-        this.currentAudioTrack$.next(data.id);
+        this.currentAudioTrack.set(data.id);
       });
 
+      return;
+    }
+
+    if (!videoElement.canPlayType('application/vnd.apple.mpegurl')) {
+      this.error.set('HLS playback is not supported in this browser.');
       return;
     }
 
@@ -62,7 +89,6 @@ export class VideoPlayerService implements OnDestroy {
     this.plyr = new Plyr(videoElement);
   }
 
-  // Метод для зміни мови
   public setAudioTrack(trackId: number): void {
     if (this.hls) {
       this.hls.audioTrack = trackId;
@@ -72,8 +98,9 @@ export class VideoPlayerService implements OnDestroy {
   public destroyPlayer(): void {
     this.plyr?.destroy();
     this.hls?.destroy();
-    this.audioTracks$.next([]);
-    this.currentAudioTrack$.next(-1);
+    this.audioTracks.set([]);
+    this.currentAudioTrack.set(-1);
+    this.error.set(null);
   }
 
   ngOnDestroy(): void {

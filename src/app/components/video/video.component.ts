@@ -1,9 +1,11 @@
-import { Component, ElementRef, ViewChild, OnInit } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnInit, effect, inject, signal, untracked, viewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute } from '@angular/router';
+import { Observable } from 'rxjs';
 import { VideoService } from './video.service';
 import { VideoPlayerService } from './video-player.service';
-import { Observable } from 'rxjs';
+import { VideoDetails } from '../../models/video/video-details.model';
 
 @Component({
   standalone: true,
@@ -11,38 +13,54 @@ import { Observable } from 'rxjs';
   templateUrl: './video.component.html',
   styleUrl: './video.component.scss',
   imports: [CommonModule],
-  providers: [VideoPlayerService] 
+  providers: [VideoPlayerService]
 })
 export class VideoComponent implements OnInit {
+  private readonly route = inject(ActivatedRoute);
+  private readonly videoService = inject(VideoService);
+  private readonly playerService = inject(VideoPlayerService);
+  private readonly destroyRef = inject(DestroyRef);
 
-  @ViewChild('videoPlayer', { static: false })
-  videoRef!: ElementRef<HTMLVideoElement>;
+  readonly video = signal<VideoDetails | null>(null);
+  readonly loadError = signal<string | null>(null);
 
-  videoData: any;
+  private readonly videoRef = viewChild<ElementRef<HTMLVideoElement>>('videoPlayer');
 
-  audioTracks$!: Observable<any[]>;
-  currentAudioTrack$!: Observable<number>;
+  readonly audioTracks = this.playerService.audioTracks;
+  readonly currentAudioTrack = this.playerService.currentAudioTrack;
+  readonly playbackError = this.playerService.error;
 
-  constructor(
-    private route: ActivatedRoute,
-    private videoService: VideoService,
-    private playerService: VideoPlayerService
-  ) {
-    this.audioTracks$ = this.playerService.audioTracks$;
-    this.currentAudioTrack$ = this.playerService.currentAudioTrack$;
+  constructor() {
+    effect(() => {
+      const element = this.videoRef()?.nativeElement;
+      const video = this.video();
+      if (!element || !video) return;
+
+      untracked(() => {
+        this.playerService
+          .initPlayer(element, video.masterPlaylistKey)
+          .catch((err) => console.error('[video] player init failed', err));
+      });
+    });
   }
 
   ngOnInit(): void {
     const id = this.route.snapshot.paramMap.get('id');
     if (!id) return;
 
-    this.videoService.loadVideoData(id).subscribe((data) => {
-      this.videoData = data;
-
-      setTimeout(() => {
-        this.playerService.initPlayer(this.videoRef.nativeElement, this.videoData.masterPlaylistKey);
+    this.videoService
+      .loadVideoData(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (data) => {
+          console.info('[video] details from API:', data);
+          this.video.set(data);
+        },
+        error: (err) => {
+          console.error('[video] failed to load video details', err);
+          this.loadError.set('Could not load the video details.');
+        }
       });
-    });
   }
 
   onAudioChange(event: Event): void {

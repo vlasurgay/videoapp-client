@@ -1,5 +1,5 @@
-import { Injectable, OnDestroy } from '@angular/core';
-import { ReplaySubject, takeUntil, from, Observable, map, concatMap, catchError, tap, throwError, toArray } from 'rxjs';
+import { Injectable, inject, OnDestroy, DestroyRef } from '@angular/core';
+import { ReplaySubject, from, Observable, map, concatMap, catchError, tap, throwError, toArray } from 'rxjs';
 import { VideoUploadApiService } from '../../services/video-upload-api.service';
 import { UploadStateService } from '../../states/upload/upload-state.service';
 import { FileUtils } from '../../utils/file.utils';
@@ -9,11 +9,14 @@ import { VideoStatus } from '../../models/video/video-status.enum';
 import { InitUploadRequest } from '../../models/video-upload/init-upload-request.model';
 import { TargetSettings } from '../../models/video-upload/target-settings.model';
 import { VideoConfig } from '../../models/video-upload/video-config.model';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 
 
 @Injectable({ providedIn: 'root' })
 export class UploadService implements OnDestroy {
+
+    private readonly destroyRef = inject(DestroyRef);
 
     private readonly destroy = new ReplaySubject<void>(1);
 
@@ -35,7 +38,7 @@ export class UploadService implements OnDestroy {
             concatMap(uploadContext => this.uploadParts(file, uploadContext)),
             concatMap(completedContext => this.videoUploadApiService.completeMultipartUpload(completedContext)),
             catchError(error => this.handleError(error)),
-            takeUntil(this.destroy)
+            takeUntilDestroyed(this.destroyRef)
         );
     }
 

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnDestroy, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, computed, inject, signal, DestroyRef } from '@angular/core';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,8 +7,8 @@ import { MatCard } from '@angular/material/card';
 import { MatIcon } from '@angular/material/icon';
 import { MatProgressBar } from '@angular/material/progress-bar';
 import { MatCheckboxModule, MatCheckboxChange } from '@angular/material/checkbox';
-import { toSignal } from '@angular/core/rxjs-interop';
-import { ReplaySubject, takeUntil, timer, Observable, throwError, catchError, finalize } from 'rxjs';
+import { toSignal, takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ReplaySubject, timer, Observable, throwError, catchError, finalize } from 'rxjs';
 import { UploadService } from '../upload/upload.service';
 import { UploadStateService } from '../../states/upload/upload-state.service';
 import { UploadState } from '../../states/upload/upload-state.model';
@@ -40,6 +40,8 @@ export class UploadComponent implements OnDestroy {
   private readonly destroy = new ReplaySubject<void>(1);
   private readonly uploadService = inject(UploadService);
   private readonly uploadStateService = inject(UploadStateService);
+    private readonly destroyRef = inject(DestroyRef);
+
 
   private targetSettings = signal<TargetSettings>({
     targetResolutions: [],
@@ -85,7 +87,7 @@ export class UploadComponent implements OnDestroy {
       this.selectedFile.set(file);
       
       this.extractVideoMetadata(file)
-        .pipe(takeUntil(this.destroy))
+        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe({
           next: (meta) => this.metadata.set(meta),
           error: (err) => {
@@ -109,7 +111,7 @@ export class UploadComponent implements OnDestroy {
     }
 
     this.uploadService.uploadMultipartFile(file, this.videoTitle, this.videoDescription, this.targetSettings())
-      .pipe(takeUntil(this.destroy))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe({
         next: () => this.handleReset(VideoStatus.COMPLETED),
         error: (error) => {
@@ -134,7 +136,7 @@ export class UploadComponent implements OnDestroy {
   private handleReset(status: VideoStatus): void {
     this.uploadStateService.updateState({ status });
 
-    timer(5000).pipe(takeUntil(this.destroy)).subscribe(() => {
+    timer(5000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.uploadStateService.resetState();
       this.resetForm();
       this.resetMetadata();
