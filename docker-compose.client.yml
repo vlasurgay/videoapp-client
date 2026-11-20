@@ -1,0 +1,16 @@
+services:
+  videoapp-client:
+    image: ${ECR_PREFIX}-client:${TAG}
+    container_name: videoapp-client
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+
+    networks:
+      - backend
+
+networks:
+  backend:
+    external: true
+    name: videoapp_default
