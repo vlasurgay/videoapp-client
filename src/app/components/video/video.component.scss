@@ -15,7 +15,6 @@
   }
 }
 
-// Новий контейнер для заголовка та селектора мови
 .video-header-row {
   display: flex;
   justify-content: space-between;
@@ -26,10 +25,9 @@
 .video-title {
   font-size: 24px;
   margin: 0 0 10px 0;
-  flex: 1; // Заголовок займає весь доступний простір
+  flex: 1;
 }
 
-// Стилізація вибору мови (використовуємо твої глобальні змінні)
 .custom-select-wrapper {
   display: flex;
   align-items: center;
@@ -67,4 +65,20 @@
   color: var(--text-muted);
   line-height: 1.5;
   white-space: pre-wrap;
+}
+
+.player-error {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  text-align: center;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.load-error {
+  color: var(--error-color);
 }
